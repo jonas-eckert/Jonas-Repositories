@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "esbuild": "^0.14.25",
+    "serverless-esbuild": "^1.25.0",
+    "serverless-offline": "^13.2.0"
+  },
+  "name": "event-risk-service-test",
+  "dependencies": {
+    "offline": "^0.0.1",
+    "serverless": "^3.36.0",
+    "typescript": "^5.2.2"
+  }
+}

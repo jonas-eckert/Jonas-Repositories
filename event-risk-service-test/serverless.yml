@@ -1,0 +1,84 @@
+org: masoncompanies
+app: jonas-test
+service: event-risk-service-test
+frameworkVersion: '3'
+
+package:
+  individually: true
+  excludeDevDependencies: true
+  include:
+    - ../../shared/**
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: us-east-2
+  httpApi:
+    payload: "2.0"
+    disableDefaultEndpoint: false
+  memorySize: 1024 # default, but can be overwritten in the function
+  timeout: 10
+  stackTags:
+    service-name: event-risk-service-test
+    stage: ${self:provider.stage}
+    team: mason development team
+    created-date: 2023-10-23
+    reusable-resource: false
+  tracing:
+    apiGateway: true
+    lambda: true
+
+functions:
+  handler:
+    handler: handler.eventRiskRouter
+    name: event-risk-service-test
+    memorySize: 512
+    timeout: 30
+    tags: 
+      service-name: event-risk-service-test
+      stage: ${self:provider.stage}
+      team: mason development team
+      created-date: 2023-10-23
+      reusable-resource: false
+    events:
+    #task
+      - http:
+          path: /MasonGateway/task/EventRisk/v1/calculate-risk
+          method: post
+          integration: lambda
+          response:
+            headers:
+              content-type: "'application/json'"
+    #entity
+      - http:
+          path: /MasonGateway/entity/EventRisk/v1/calculate-risk
+          method: post
+          integration: lambda
+          response:
+            headers:
+              content-type: "'application/json'"
+    #utility
+      - http:
+          path: /MasonGateway/utility/EventRisk/v1/calculate-risk
+          method: post
+          integration: lambda
+          response:
+            headers:
+              content-type: "'application/json'"
+    vpc:
+      securityGroupIds:
+        - ${ssm:/${self:provider.stage}/soa/event-risk-check/security-group}
+      subnetIds:
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-1}
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-2}
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-3}
+    environment:
+      REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      ACCERTIFY_BASE_URL:
+        ${ssm:/${self:provider.stage}/soa/accertify/base-url}
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
