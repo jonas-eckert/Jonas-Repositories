@@ -1,20 +1,25 @@
+import pino from 'pino';
 import { calculateRiskEntity } from "../entity/calculate-risk";
 import { IMasonRequest, IAddress, IPayments, IMasonResponse } from "../../Definitions/MasonEventRiskDef";
 import { IOracleRequest, IOracleResponse } from "../../Definitions/OracleEventRiskDef";
 
+const logger = pino();
+
 export const calculateRiskTask = async (event : any) => {
 	try {
 
-
     //calls function to convert from oracle to mason common object
     const reqBody = mapOracleToMason(event.body);
-
+    console.log(reqBody)
 		//calls the calculateRiskEntity service passing in the Mason CO
     const resBody = await calculateRiskEntity(reqBody)
     var parsedResponse = JSON.parse(JSON.stringify(resBody));
 
-    //Returns back to the original caller the Oracle object  
-		return mapMasonToOracle(parsedResponse);
+    //Returns back to the original caller with a oracle object
+    if(parsedResponse.code !== "OK"){
+      return parsedResponse;
+    } 
+    return mapMasonToOracle(parsedResponse);
 	} 
 	catch (error) {
     //generic error handler
@@ -160,10 +165,8 @@ export const mapOracleToMason = (inBody: IOracleRequest): IMasonRequest => {
   if(inBody.Parameters){
     masonRequest.BaseParameters = {};
 
-    if(inBody.Parameters.isSuccess && inBody.Parameters.isSuccess === true){
-      masonRequest.BaseParameters.isSuccess = true;
-    }else {
-      masonRequest.BaseParameters.isSuccess = false;
+    if(inBody.Parameters.isSuccess || inBody.Parameters.isSuccess === false){
+      masonRequest.BaseParameters.isSuccess = inBody.Parameters.isSuccess;
     }
     if(inBody.Parameters.thirdPartyLogin){
       masonRequest.BaseParameters.thirdPartyLogin = inBody.Parameters.thirdPartyLogin;

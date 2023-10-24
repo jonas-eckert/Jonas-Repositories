@@ -7,6 +7,7 @@
   "name": "event-risk-service-test",
   "dependencies": {
     "offline": "^0.0.1",
+    "pino": "^8.16.1",
     "serverless": "^3.36.0",
     "typescript": "^5.2.2"
   }

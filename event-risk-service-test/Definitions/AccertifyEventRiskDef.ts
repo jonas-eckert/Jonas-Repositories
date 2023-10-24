@@ -86,15 +86,16 @@ export interface IAccertifyResponse {
 			};
 			insights?: Array<string>;
 		};
+		listHits?: {
+			negativeValues?: Array<IListHitValues>;
+			positiveValues?: Array<IListHitValues>;
+		};
 	};
-	listHits?: {
-		negativeValues?: Array<IListHitValues>;
-		positiveValues?: Array<IListHitValues>;
-	};
+	
 	eventDetails?: {
 		deviceDetails?: {
-			deviceIDConfidence?: string | null;
-			deviceIDFirstSeen?: number;
+			deviceIDConfidence?: number;
+			deviceIDFirstSeen?: string;
 			deviceID?: string;
 			deviceIDNew?: boolean;
 			deviceIDTimesSeen?: number;

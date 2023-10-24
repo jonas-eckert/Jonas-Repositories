@@ -2,6 +2,7 @@
 node_modules
 .esbuild
 .build
+.vscode
 
 # Serverless directories
 .serverless
