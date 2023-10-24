@@ -1,25 +1,25 @@
-import { calculateRiskTask } from "./Operations/task/calculate-risk";
-import { calculateRiskEntity } from "./Operations/entity/calculate-risk";
-import { calculateRiskUtility } from "./Operations/utility/calculate-risk";
+import { calculateRiskTask } from "./operations/task/calculate-risk";
+import { calculateRiskEntity } from "./operations/entity/calculate-risk";
+import { calculateRiskUtility } from "./operations/utility/calculate-risk";
 
 module.exports.eventRiskRouter = async (event) => {
   try {
     let apiPath = event.requestPath;
 
     //TASK SERVICES///////////////////////////////////////////////////////////////////
-    if(apiPath === "/task/EventRisk/calculate-risk"){
+    if(apiPath === "/MasonGateway/task/EventRisk/v1/calculate-risk"){
 
       return calculateRiskTask(event);
     }
 
     //ENTITY SERVICES//////////////////////////////////////////////////////////////////
-    if(apiPath === "/entity/EventRisk/calculate-risk"){
+    if(apiPath === "/MasonGateway/entity/EventRisk/v1/calculate-risk"){
 
       return calculateRiskEntity(event);
     }
 
     //UTILITY SERVICES//////////////////////////////////////////////////////////////////
-    if(apiPath === "/utility/EventRisk/calculate-risk"){
+    if(apiPath === "/MasonGateway/utility/EventRisk/v1/calculate-risk"){
 
       return calculateRiskUtility(event)
     }

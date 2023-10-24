@@ -27,12 +27,28 @@ export interface IOracleRequest {
 		returnScore?: boolean;
 		latitude?: string;
 		longitude?: string;
-		Addresses?: [{
-			addrType?: string;
-			isPrimary?: boolean;
-			firstName?: string;
-			lastName?: string;
-		}];
+		failureCode?: string;
+		updateTrigger?: string;
+		transactionId?: string;
+		currencyCode?: string;
+		verificationType?: string;
+		verificationStatus?: string;
+		verificationAttempts: number;
+		updateEventId?: string;
+		paymentAmount?: number;
+		dob?: string;
+		gender?: string;
+		phone?: string;
+		zip?: string;
+		previousDob?: string;
+		previousGender?: string;
+		previousFirstName?: string;
+		previousLastName?: string;
+		previousPhone?: string;
+		previousZip?: string;
+		previousEmailAddress?: string;
+		Addresses?: Array<IAddress>;
+		PreviousAddresses?: Array<IAddress>;
 		PaymentMethods?: Array<IPaymentMethods>;
 		PreviousPaymentMethods?: Array<IPaymentMethods>;
 
@@ -47,6 +63,20 @@ export interface IPaymentMethods {
 	lastDigitsOfPan?: number;
 	avsResponseCode?: string;
 	cvvResponseCode?: string;
+}
+export interface IAddress {
+	addrType?: string;
+	isPrimary?: boolean;
+	firstName?: string;
+	lastName?: string;
+	addr1?: string;
+	addr2?: string;
+	city?: string;
+	state?: string;
+	zip?: string;
+	country?: string;
+	email?: string;
+	phone?: string;
 }
 
 //RESPONSE
@@ -64,10 +94,10 @@ export interface IOracleResponse {
 	insights?: Array<string>;
 	DeviceDetail?: {
 		deviceIdConfidence?: string;
-		deviceIdFirstSeenOn?: Date;
+		deviceIdFirstSeenOn?: number;
 		deviceId?: string;
-		isNewDeviceId: boolean;
-		deviceIdTimesSeen: number;
+		isNewDeviceId?: boolean;
+		deviceIdTimesSeen?: number;
 	};
 }
 
