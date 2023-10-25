@@ -101,8 +101,6 @@ export const calculateRiskEntity= async (event: IMasonRequest) => {
         }
       }
 
-      logger.info(errorBody);
-
       if(errorBody.validationMessage !== " "){
         errorBody.code = "Validation Failed."
       }

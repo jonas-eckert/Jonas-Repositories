@@ -16,7 +16,7 @@ export interface IAccertifyRequest {
 	hashedPassword?: string;
 	previousHashedPassword?: string;
 	updatedHashedPassword?: string;
-	lastPasswordChangeDate?: Date;
+	lastPasswordChangeDate?: string;
 	returnScore?: boolean;
 	latitude?: string;
 	longitude?: string;
@@ -27,6 +27,10 @@ export interface IAccertifyRequest {
 	currencyCode?: string;
 	paymentAmount?: number;
 	chargebackAmount?: number;
+	verificationType?: string;
+	verificationStatus?: string;
+	verificationAttempts?: number;
+	updateEventID?: string;
 	updatedValues?: IAccountUpdate;
 	previousValues?: IAccountUpdate;
 	paymentMethods?: Array<IPaymentMethods>;
@@ -43,32 +47,35 @@ export interface IAccountUpdate {
 	accountID?: string;
 	emailAddress?: string;
 	username?: string;
-	addresses?: [{
-		addressType?: string;
-		primaryFlag?: string;
-		firstName?: string;
-		lastName?: string;
-		address1?: string;
-		address2?: string;
-		city?: string;
-		region?: string;
-	}];
-	previousValues?: {
-		dateOfBirth?: string;
-		gender?: string;
-		firstName?: string;
-		lastName?: string;
-		phone?: string;
-		paymentMethods?: Array<IPaymentMethods>;
-	}
+	addresses?: Array<IAccertifyAddress>;
+	paymentMethods?: Array<IPaymentMethods>;
 }
 
 export interface IPaymentMethods {
 	paymentType?: string;
 	cardNumber?: string;
-	expirationMonth?: number;
-	expirationYear?: number;
+	expirationMonth?: string;
+	expirationYear?: string;
 	nameOnCreditCard?: string;
+	cardBin?: string;
+	cardLastFour?: number;
+	avsResult?: string;
+	cvvResult?: string;
+}
+
+export interface IAccertifyAddress {
+	addressType?: string;
+	primaryFlag?: string;
+	firstName?: string;
+	lastName?: string;
+	address1?: string;
+	address2?: string;
+	city?: string;
+	region?: string;
+	postCode?: string;
+	country?: string;
+	email?: string;
+	phone?: string;
 }
 
 //RESPONSE MAPPINGS

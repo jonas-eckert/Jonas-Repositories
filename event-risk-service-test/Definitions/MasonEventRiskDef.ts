@@ -32,6 +32,7 @@ export interface IMasonRequest {
       verificationAttempts?: number;
       updateEventId?: string;
       paymentAmount?: number;
+      chargebackAmount?: number;
     },
     Customer?: ICustomer;
     PreviousCustomer?: ICustomer;

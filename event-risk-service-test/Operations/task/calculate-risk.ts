@@ -10,7 +10,7 @@ export const calculateRiskTask = async (event : any) => {
 
     //calls function to convert from oracle to mason common object
     const reqBody = mapOracleToMason(event.body);
-    console.log(reqBody)
+
 		//calls the calculateRiskEntity service passing in the Mason CO
     const resBody = await calculateRiskEntity(reqBody)
     var parsedResponse = JSON.parse(JSON.stringify(resBody));
@@ -45,7 +45,11 @@ export const mapOracleToMason = (inBody: IOracleRequest): IMasonRequest => {
    * @returns mapped address body from oracle object to mason co
    */
   function buildAddress(addressBody: any): IAddress{
-    const mappedAddress : IAddress = {};
+    const mappedAddress : IAddress = {
+      HeaderInfo: {},
+      PersonInfo: {},
+      LocationInfo: {}
+    };
 
     if(addressBody.addrType){
       mappedAddress.HeaderInfo!.addressType = addressBody.addrType;
@@ -92,7 +96,9 @@ export const mapOracleToMason = (inBody: IOracleRequest): IMasonRequest => {
    * @returns payment object that has been mapped from oracle object to mason co
    */
   function buildPayment(paymentBody: any): IPayments{
-    const mappedPayment: IPayments = {};
+    const mappedPayment: IPayments = {
+      PaymentInfo: {}
+    };
 
     if(paymentBody.paymentType){
       switch(paymentBody.paymentType) {
@@ -356,30 +362,27 @@ export const mapOracleToMason = (inBody: IOracleRequest): IMasonRequest => {
           masonRequest.PreviousCustomer!.RecipientAddresses.push(mappedPreviousAddress);
         }  
       }
-      //payment
-      if(inBody.Parameters.PaymentMethods && inBody.Parameters.PaymentMethods.length > 0){
-        masonRequest.Payments = [];
+    }
+    //payment
+    if(inBody.Parameters.PaymentMethods && inBody.Parameters.PaymentMethods.length > 0){
+      masonRequest.Payments = [];
 
-        for(var i = 0; i < inBody.Parameters.PaymentMethods.length; i++){
-          var inPayment = inBody.Parameters.PaymentMethods[i];
+      for(var i = 0; i < inBody.Parameters.PaymentMethods.length; i++){
+        masonRequest.Payments.push(buildPayment(inBody.Parameters.PaymentMethods[i]));
 
-          var mappedPayments = buildPayment(inPayment);
-
-          masonRequest.Payments.push(mappedPayments);
-        }
       }
+    }
 
-      //previous payment
-      if(inBody.Parameters.PreviousPaymentMethods && inBody.Parameters.PreviousPaymentMethods.length > 0){
-        masonRequest.PreviousPayments = [];
+    //previous payment
+    if(inBody.Parameters.PreviousPaymentMethods && inBody.Parameters.PreviousPaymentMethods.length > 0){
+      masonRequest.PreviousPayments = [];
 
-        for(var i = 0; i < inBody.Parameters.PreviousPaymentMethods.length; i++){
-          var inPreviousPayment = inBody.Parameters.PreviousPaymentMethods[i];
+      for(var i = 0; i < inBody.Parameters.PreviousPaymentMethods.length; i++){
+        var inPreviousPayment = inBody.Parameters.PreviousPaymentMethods[i];
 
-          var mappedPreviousPayments = buildPayment(inPreviousPayment);
+        var mappedPreviousPayments = buildPayment(inPreviousPayment);
 
-          masonRequest.PreviousPayments.push(mappedPreviousPayments);
-        }
+        masonRequest.PreviousPayments.push(mappedPreviousPayments);
       }
     }
   }
