@@ -13,6 +13,7 @@ provider:
   name: aws
   runtime: nodejs18.x
   stage: dev
+  role: arn:aws:iam::${aws:accountId}:role/soa-lambda-execution-role
   region: us-east-2
   httpApi:
     payload: "2.0"
@@ -23,8 +24,8 @@ provider:
     service-name: event-risk-service-test
     stage: ${self:provider.stage}
     team: mason development team
-    created-date: 2023-10-23
-    reusable-resource: false
+    created-date: '2023-10-23'
+    reusable-resource: 'false'
   tracing:
     apiGateway: true
     lambda: true
@@ -39,8 +40,8 @@ functions:
       service-name: event-risk-service-test
       stage: ${self:provider.stage}
       team: mason development team
-      created-date: 2023-10-23
-      reusable-resource: false
+      created-date: '2023-10-23'
+      reusable-resource: 'false'
     events:
     #task
       - http:

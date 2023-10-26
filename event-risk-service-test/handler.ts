@@ -1,6 +1,8 @@
+import pino from 'pino';
 import { calculateRiskTask } from "./operations/task/calculate-risk";
 import { calculateRiskEntity } from "./operations/entity/calculate-risk";
 import { calculateRiskUtility } from "./operations/utility/calculate-risk";
+const logger = pino();
 
 module.exports.eventRiskRouter = async (event) => {
   try {
@@ -9,19 +11,19 @@ module.exports.eventRiskRouter = async (event) => {
     //TASK SERVICES///////////////////////////////////////////////////////////////////
     if(apiPath === "/MasonGateway/task/EventRisk/v1/calculate-risk"){
 
-      return calculateRiskTask(event);
+      return await calculateRiskTask(event.body)
     }
 
     //ENTITY SERVICES//////////////////////////////////////////////////////////////////
     if(apiPath === "/MasonGateway/entity/EventRisk/v1/calculate-risk"){
 
-      return calculateRiskEntity(event);
+      return calculateRiskEntity(event.body);
     }
 
     //UTILITY SERVICES//////////////////////////////////////////////////////////////////
     if(apiPath === "/MasonGateway/utility/EventRisk/v1/calculate-risk"){
 
-      return calculateRiskUtility(event)
+      return calculateRiskUtility(event.body)
     }
     return {
       statusCode: 200,

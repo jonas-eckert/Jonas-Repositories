@@ -5,20 +5,17 @@ import { IOracleRequest, IOracleResponse } from "../../Definitions/OracleEventRi
 
 const logger = pino();
 
-export const calculateRiskTask = async (event : any) => {
+export const calculateRiskTask = async (event : IOracleRequest) => {
 	try {
 
     //calls function to convert from oracle to mason common object
-    const reqBody = mapOracleToMason(event.body);
+    const reqBody = mapOracleToMason(event);
 
 		//calls the calculateRiskEntity service passing in the Mason CO
     const resBody = await calculateRiskEntity(reqBody)
     var parsedResponse = JSON.parse(JSON.stringify(resBody));
 
     //Returns back to the original caller with a oracle object
-    if(parsedResponse.code !== "OK"){
-      return parsedResponse;
-    } 
     return mapMasonToOracle(parsedResponse);
 	} 
 	catch (error) {
@@ -395,6 +392,7 @@ export const mapOracleToMason = (inBody: IOracleRequest): IMasonRequest => {
  * @returns a mapped oracle object from a mason co
  */
 export const mapMasonToOracle = (inBody: IMasonResponse): IOracleResponse => {
+  logger.info(inBody, "mapMasonToOracle inBody")
   const oracleResponse: IOracleResponse = {};
   
   if(inBody.code){
@@ -432,25 +430,26 @@ export const mapMasonToOracle = (inBody: IMasonResponse): IOracleResponse => {
       oracleResponse.insights = inBody.RiskResult.Insights;
     }
     if(inBody.RiskResult.DeviceDetail){
-      oracleResponse.DeviceDetail = {};
+       var deviceDetail: any = {};
 
       if(inBody.RiskResult.DeviceDetail.deviceIdConfidence){
-        oracleResponse.DeviceDetail.deviceIdConfidence = inBody.RiskResult.DeviceDetail.deviceIdConfidence;
+        deviceDetail.deviceIdConfidence = inBody.RiskResult.DeviceDetail.deviceIdConfidence;
       }
       //need to convert milliseconds since epoch to date
       if(inBody.RiskResult.DeviceDetail.deviceIdFirstSeenOn){
-        oracleResponse.DeviceDetail.deviceIdFirstSeenOn = inBody.RiskResult.DeviceDetail.deviceIdFirstSeenOn;
+        deviceDetail.deviceIdFirstSeenOn = inBody.RiskResult.DeviceDetail.deviceIdFirstSeenOn;
       }
       if(inBody.RiskResult.DeviceDetail.deviceId){
-        oracleResponse.DeviceDetail.deviceId = inBody.RiskResult.DeviceDetail.deviceId;
+        deviceDetail.deviceId = inBody.RiskResult.DeviceDetail.deviceId;
       }
       if(inBody.RiskResult.DeviceDetail.isNewDeviceId || inBody.RiskResult.DeviceDetail.isNewDeviceId === false){
-        oracleResponse.DeviceDetail.isNewDeviceId = inBody.RiskResult.DeviceDetail.isNewDeviceId;
+        deviceDetail.isNewDeviceId = inBody.RiskResult.DeviceDetail.isNewDeviceId;
       }
       if(inBody.RiskResult.DeviceDetail.deviceIdTimesSeen){
-        oracleResponse.DeviceDetail.deviceIdTimesSeen = inBody.RiskResult.DeviceDetail.deviceIdTimesSeen;
+        deviceDetail.deviceIdTimesSeen = inBody.RiskResult.DeviceDetail.deviceIdTimesSeen;
       }
     }
   }
+  logger.info(oracleResponse, 'oracleResponse')
   return oracleResponse;
 }

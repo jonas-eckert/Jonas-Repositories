@@ -98,7 +98,6 @@ export interface IAccertifyResponse {
 			positiveValues?: Array<IListHitValues>;
 		};
 	};
-	
 	eventDetails?: {
 		deviceDetails?: {
 			deviceIDConfidence?: number;
@@ -113,7 +112,6 @@ export interface IAccertifyResponse {
 		warning?: Array<string>;
 		info?: Array<string>;
 	}
-
 }
 
 export interface IListHitValues {

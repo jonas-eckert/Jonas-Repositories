@@ -1,88 +1,41 @@
+import axios from 'axios';
 import pino from 'pino';
-import { IMasonRequest, IMasonResponse, IMasonHits, IRiskResult, ICustomer, IAddress, IPayments } from "../../Definitions/MasonEventRiskDef";
+import { IMasonRequest, IMasonResponse, IMasonHits, ICustomer, IAddress, IPayments } from "../../Definitions/MasonEventRiskDef";
 import { IAccertifyRequest, IAccertifyResponse, IAccountUpdate, IAccertifyAddress, IPaymentMethods } from "../../Definitions/AccertifyEventRiskDef";
 import { fetchSecret } from '../../shared/utils/FetchSecrets';
 const logger = pino();
 
 export const calculateRiskUtility = async (event: any) => {
 	try {
-
     //calls function to convert from mason co to accertify object
     const accertifyRequest = mapMasonToAccertify(event);
-    logger.info(accertifyRequest)
-    //call to Accertify
-    //3rd party call to accertify using accertifyRequest as the data for the request
-    const mockAccertifyResponse: IAccertifyResponse = {
-      'status': true,
-      'eventID': 'f467d441-29bc-4be0-b40e-c3b247d68fa2',
-      'messages': {
-        'error': [],
-        'warning': [],
-        'info': [
-          'debug logging is enabled',
-          'duration to process transaction: 200 ms'
-        ]
-      },
-    'eventDetails': {
-        'deviceDetails':  {
-            'deviceIDConfidence': 99,
-            'deviceIDFirstSeen': '1634064122326',
-            'deviceID': '123456',
-            'deviceIDNew': false,
-            'deviceIDTimesSeen': 2
-         } 
-     },
-      'results': {
-        'riskScore': {
-          'score': 88,
-          'reasonCodes': {
-            'riskFactors': [
-              'Device Reputation',
-              'Connection History'
-            ],
-            'trustFactors': [
-              'Email History',
-              'Email Reputation'
-            ]
-          },
-          'insights': [
-            'emailAliased',
-            'suspectedBot'
-          ]
-        },
-        'listHits': {
-          'negativeValues': [ {
-            'type': 'IP Address',
-            'fieldName': 'realIpAddress',
-            'value': '128.210.79.50',
-            'created': '1580852422000',
-            'timesHit': 13,
-            'lastSeen': '1580853495000'
-          },
-          {
-            'type': 'IP Address',
-            'fieldName': 'ipAddress',
-            'value': '127.0.0.1',
-            'created': "1580852423000",
-            'timesHit': 14,
-            'lastSeen': "1580853496000"
-          } ],
-          'positiveValues': [ {
-            'type': 'Email Address',
-            'fieldName': 'emailAddress',
-            'value': 'joe@no.tld',
-            'created': '1580852424000',
-            'timesHit': 89,
-            'lastSeen': '1580853497000'
-          } ]
-        }
-      }
+
+    ///////START OF ACCERTIFY CALL
+    const accertifyBaseURL = process.env.ACCERTIFY_BASE_URL;
+    const eventType = event.eventType;
+    const accertifyEndPoint = `${accertifyBaseURL}/${eventType}`;
+
+    const credentials: any = await fetchSecret<string>(
+      `${process.env.STAGE}/soa/Accertify`,
+    );
+    const encodedCredentials = Buffer.from(
+      `${credentials.username}:${credentials.password}`,
+    ).toString('base64');
+
+    const accertifyHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${encodedCredentials}`,
     };
 
-    
-    //Returns back to the original caller with a mason co
-		// return mapAccertifyToMason(mockAccertifyResponse);
-    return mapAccertifyToMason(mockAccertifyResponse)
+    //////Excute Call
+    const accertifyResponse = await axios.post(
+      accertifyEndPoint,
+      accertifyRequest,
+      { headers: accertifyHeaders },
+    );
+
+    return mapAccertifyToMason(accertifyResponse.data);
+
 	} 
     catch (error) {
     //generic error handler
@@ -386,117 +339,119 @@ export const mapMasonToAccertify = (inBody: IMasonRequest): IAccertifyRequest =>
 }
 
 export const mapAccertifyToMason = (inBody: IAccertifyResponse): IMasonResponse => {
-  const riskResult : IRiskResult = {};
   const masonResponse : IMasonResponse = {};
+  masonResponse.RiskResult = {};
  
   if(inBody.status && inBody.status === true){
     masonResponse.code = "OK";
   }
   if(inBody.eventID){
-    riskResult.eventId = inBody.eventID;
+    masonResponse.RiskResult.eventId = inBody.eventID;
   }
   if(inBody.results && inBody.results.riskScore){
-    const riskScore = inBody.results.riskScore;
 
-    if(riskScore.score){
-      riskResult.score = String(riskScore.score);
+    if(inBody.results.riskScore.score){
+      masonResponse.RiskResult.score = String(inBody.results.riskScore.score);
     }
-    if(riskScore.recommendationCode){
-      riskResult.recommendationCode = riskScore.recommendationCode;
+    if(inBody.results.riskScore.recommendationCode){
+      masonResponse.RiskResult.recommendationCode = inBody.results.riskScore.recommendationCode;
     }
-    if(riskScore.recommendationDetail){
-      riskResult.recommendationDetail = riskScore.recommendationDetail;
+    if(inBody.results.riskScore.recommendationDetail){
+      masonResponse.RiskResult.recommendationDetail = inBody.results.riskScore.recommendationDetail;
     }
-    if(riskScore.reasonCodes && riskScore.reasonCodes.trustFactors && riskScore.reasonCodes.trustFactors.length > 0){
-      riskResult.TrustFactors = riskScore.reasonCodes.trustFactors;
+    if(inBody.results.riskScore.reasonCodes && 
+      inBody.results.riskScore.reasonCodes.trustFactors && 
+      inBody.results.riskScore.reasonCodes.trustFactors.length > 0){
+      masonResponse.RiskResult.TrustFactors = inBody.results.riskScore.reasonCodes.trustFactors;
     }
-    if(riskScore.reasonCodes && riskScore.reasonCodes.riskFactors && riskScore.reasonCodes.riskFactors.length > 0){
-      riskResult.RiskFactors = riskScore.reasonCodes.riskFactors;
+    if(inBody.results.riskScore.reasonCodes && 
+      inBody.results.riskScore.reasonCodes.riskFactors && 
+      inBody.results.riskScore.reasonCodes.riskFactors.length > 0){
+      masonResponse.RiskResult.RiskFactors = inBody.results.riskScore.reasonCodes.riskFactors;
     }
-    if(riskScore.insights && riskScore.insights.length > 0){
-      riskResult.Insights = riskScore.insights;
-    }
-    if(inBody.results.listHits){
-      if(inBody.results.listHits.negativeValues){
-        riskResult.NegativeHits = [];
-        for(var i = 0; i < inBody.results.listHits.negativeValues.length; i++){
-          const inNegativeValues = inBody.results.listHits.negativeValues[i];
-          const outNegativeValues: IMasonHits = {};
-  
-          if(inNegativeValues.fieldName){
-            outNegativeValues.name = inNegativeValues.fieldName;
-          }
-          if(inNegativeValues.type){
-            outNegativeValues.type = inNegativeValues.type;
-          }
-          if(inNegativeValues.value){
-            outNegativeValues.value = inNegativeValues.value;
-          }
-          if(inNegativeValues.created){
-            outNegativeValues.createdOn = inNegativeValues.created;
-          }
-          if(inNegativeValues.lastSeen){
-            outNegativeValues.lastSeenOn = inNegativeValues.lastSeen;
-          }
-          if(inNegativeValues.timesHit){
-            outNegativeValues.timesHit = inNegativeValues.timesHit;
-          }
-          riskResult.NegativeHits.push(outNegativeValues);
+    if(inBody.results.riskScore.insights && inBody.results.riskScore.insights.length > 0){
+      masonResponse.RiskResult.Insights = inBody.results.riskScore.insights;
+    }   
+  }
+  if(inBody.results && inBody.results.listHits){
+    if(inBody.results.listHits.negativeValues){
+      masonResponse.RiskResult.NegativeHits = [];
+      for(var i = 0; i < inBody.results.listHits.negativeValues.length; i++){
+        const inNegativeValues = inBody.results.listHits.negativeValues[i];
+        const outNegativeValues: IMasonHits = {};
+
+        if(inNegativeValues.fieldName){
+          outNegativeValues.name = inNegativeValues.fieldName;
         }
+        if(inNegativeValues.type){
+          outNegativeValues.type = inNegativeValues.type;
+        }
+        if(inNegativeValues.value){
+          outNegativeValues.value = inNegativeValues.value;
+        }
+        if(inNegativeValues.created){
+          outNegativeValues.createdOn = inNegativeValues.created;
+        }
+        if(inNegativeValues.lastSeen){
+          outNegativeValues.lastSeenOn = inNegativeValues.lastSeen;
+        }
+        if(inNegativeValues.timesHit){
+          outNegativeValues.timesHit = inNegativeValues.timesHit;
+        }
+        masonResponse.RiskResult.NegativeHits.push(outNegativeValues);
       }
-      if(inBody.results.listHits.positiveValues){
-        riskResult.PositiveHits = [];
-        for(var j = 0; j < inBody.results.listHits.positiveValues.length; j++){
-          const inPostiveValues = inBody.results.listHits.positiveValues[j];
-          const outPositiveValues: IMasonHits = {};
-  
-          if(inPostiveValues.fieldName){
-            outPositiveValues.name = inPostiveValues.fieldName;
-          }
-          if(inPostiveValues.type){
-            outPositiveValues.type = inPostiveValues.type;
-          }
-          if(inPostiveValues.value){
-            outPositiveValues.value = inPostiveValues.value;
-          }
-          if(inPostiveValues.created){
-            outPositiveValues.createdOn = inPostiveValues.created;
-          }
-          if(inPostiveValues.lastSeen){
-            outPositiveValues.lastSeenOn = inPostiveValues.lastSeen;
-          }
-          if(inPostiveValues.timesHit){
-            outPositiveValues.timesHit = inPostiveValues.timesHit;
-          }
-          riskResult.PositiveHits.push(outPositiveValues);
+    }
+    if(inBody.results.listHits.positiveValues){
+      masonResponse.RiskResult.PositiveHits = [];
+      for(var j = 0; j < inBody.results.listHits.positiveValues.length; j++){
+        const inPostiveValues = inBody.results.listHits.positiveValues[j];
+        const outPositiveValues: IMasonHits = {};
+
+        if(inPostiveValues.fieldName){
+          outPositiveValues.name = inPostiveValues.fieldName;
         }
+        if(inPostiveValues.type){
+          outPositiveValues.type = inPostiveValues.type;
+        }
+        if(inPostiveValues.value){
+          outPositiveValues.value = inPostiveValues.value;
+        }
+        if(inPostiveValues.created){
+          outPositiveValues.createdOn = inPostiveValues.created;
+        }
+        if(inPostiveValues.lastSeen){
+          outPositiveValues.lastSeenOn = inPostiveValues.lastSeen;
+        }
+        if(inPostiveValues.timesHit){
+          outPositiveValues.timesHit = inPostiveValues.timesHit;
+        }
+        masonResponse.RiskResult.PositiveHits.push(outPositiveValues);
       }
     }
   }
   
   if(inBody.eventDetails && inBody.eventDetails.deviceDetails){
-    riskResult.DeviceDetail = {};
+    var deviceDetail: any = {};
 
     if(inBody.eventDetails.deviceDetails.deviceIDConfidence){
-      riskResult.DeviceDetail.deviceIdConfidence = String(inBody.eventDetails.deviceDetails.deviceIDConfidence);
+      deviceDetail.deviceIdConfidence = String(inBody.eventDetails.deviceDetails.deviceIDConfidence);
     }
     if(inBody.eventDetails.deviceDetails.deviceIDFirstSeen){
-      riskResult.DeviceDetail.deviceIdFirstSeenOn = Number(inBody.eventDetails.deviceDetails.deviceIDFirstSeen);
+      deviceDetail.deviceIdFirstSeenOn = Number(inBody.eventDetails.deviceDetails.deviceIDFirstSeen);
     }
     if(inBody.eventDetails.deviceDetails.deviceID){
-      riskResult.DeviceDetail.deviceId = inBody.eventDetails.deviceDetails.deviceID;
+      deviceDetail.deviceId = inBody.eventDetails.deviceDetails.deviceID;
     }
     if(inBody.eventDetails.deviceDetails.deviceIDNew){
-      riskResult.DeviceDetail.isNewDeviceId = inBody.eventDetails.deviceDetails.deviceIDNew;
+      deviceDetail.isNewDeviceId = inBody.eventDetails.deviceDetails.deviceIDNew;
     }
     if(inBody.eventDetails.deviceDetails.deviceIDTimesSeen){
-      riskResult.DeviceDetail.deviceIdTimesSeen = inBody.eventDetails.deviceDetails.deviceIDTimesSeen;
+      deviceDetail.deviceIdTimesSeen = inBody.eventDetails.deviceDetails.deviceIDTimesSeen;
+    }
+    if(Object.keys(deviceDetail).length){
+      masonResponse.RiskResult.DeviceDetail = deviceDetail;
     }
   }
-  if(riskResult !== undefined){
-    masonResponse.RiskResult = riskResult;
-  }
-  
   return masonResponse;
 }
 

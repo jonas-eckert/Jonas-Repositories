@@ -26,9 +26,11 @@ export const calculateRiskEntity= async (event: IMasonRequest) => {
       if(!inBody.eventSource){
         errorBody.validationMessage += "Eventsource must exist."
       }
-      if(inBody.eventType === "login" && !inBody.BaseParameters.isSuccess && inBody.BaseParameters.isSuccess !== false){
-        errorBody.validationMessage += "isSuccess must exist when eventType is login."
-      }
+      if(inBody.eventType === "login"){
+        if(!inBody.BaseParameters.isSuccess && inBody.BaseParameters.isSuccess !== false){
+          errorBody.validationMessage += "isSuccess must exist when eventType is login."
+        }
+      } 
       if(inBody.eventType === "logout"){
         if(!inBody.Customer || 
           !inBody.Customer.DivisionCustomers || 
@@ -38,8 +40,10 @@ export const calculateRiskEntity= async (event: IMasonRequest) => {
             errorBody.validationMessage += "webAccountId must exist when eventType is logout."
         }
       }
-      if(inBody.eventType === "accountCreate" && !inBody.BaseParameters.isSuccess && inBody.BaseParameters.isSuccess !== false){
-        errorBody.validationMessage += "isSuccess must exist when eventType is accountCreate."
+      if(inBody.eventType === "accountCreate"){
+        if(!inBody.BaseParameters.isSuccess && inBody.BaseParameters.isSuccess !== false){
+          errorBody.validationMessage += "isSuccess must exist when eventType is accountCreate."
+        }
       }
       if(inBody.eventType === "accountUpdate"){
         if(!inBody.Customer || 
@@ -114,7 +118,7 @@ export const calculateRiskEntity= async (event: IMasonRequest) => {
     }
 
 		//request validation goes here
-		return calculateRiskUtility(event);
+		return await calculateRiskUtility(event)
     //call to Accertify
   }
     catch (error) {
