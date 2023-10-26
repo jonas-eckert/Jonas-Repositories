@@ -1,6 +1,6 @@
 import pino from 'pino';
 import { calculateRiskUtility } from "../utility/calculate-risk";
-import { IMasonRequest } from '../../Definitions/MasonEventRiskDef';
+import { IMasonRequest } from '../../definitions/MasonEventRiskDef';
 const logger = pino();
 
 export const calculateRiskEntity= async (event: IMasonRequest) => {

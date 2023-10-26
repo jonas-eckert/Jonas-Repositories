@@ -1,7 +1,8 @@
 import pino from 'pino';
 import { calculateRiskTask } from "./operations/task/calculate-risk";
 import { calculateRiskEntity } from "./operations/entity/calculate-risk";
-import { calculateRiskUtility } from "./operations/utility/calculate-risk";
+import { calculateRiskUtility } from './operations/utility/calculate-risk';
+
 const logger = pino();
 
 module.exports.eventRiskRouter = async (event) => {

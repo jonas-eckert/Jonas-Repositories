@@ -1,7 +1,7 @@
 import pino from 'pino';
 import { calculateRiskEntity } from "../entity/calculate-risk";
-import { IMasonRequest, IAddress, IPayments, IMasonResponse } from "../../Definitions/MasonEventRiskDef";
-import { IOracleRequest, IOracleResponse } from "../../Definitions/OracleEventRiskDef";
+import { IMasonRequest, IAddress, IPayments, IMasonResponse } from "../../definitions/MasonEventRiskDef";
+import { IOracleRequest, IOracleResponse } from "../../definitions/OracleEventRiskDef";
 
 const logger = pino();
 

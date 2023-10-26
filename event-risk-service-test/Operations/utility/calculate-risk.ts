@@ -1,7 +1,7 @@
 import axios from 'axios';
 import pino from 'pino';
-import { IMasonRequest, IMasonResponse, IMasonHits, ICustomer, IAddress, IPayments } from "../../Definitions/MasonEventRiskDef";
-import { IAccertifyRequest, IAccertifyResponse, IAccountUpdate, IAccertifyAddress, IPaymentMethods } from "../../Definitions/AccertifyEventRiskDef";
+import { IMasonRequest, IMasonResponse, IMasonHits, ICustomer, IAddress, IPayments } from "../../definitions/MasonEventRiskDef";
+import { IAccertifyRequest, IAccertifyResponse, IAccountUpdate, IAccertifyAddress, IPaymentMethods } from "../../definitions/AccertifyEventRiskDef";
 import { fetchSecret } from '../../shared/utils/FetchSecrets';
 const logger = pino();
 
