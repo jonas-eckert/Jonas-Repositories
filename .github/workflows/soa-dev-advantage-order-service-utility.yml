@@ -3,16 +3,19 @@ name: CICD DEV SOA advantage-order-service-utility
 on:
   push:
     branches:
-      - dev
+      - feature-initialDevelopment
     paths:
       - 'services/advantage-order-service-utility/v8/**'
+
+env: 
+  SERVICE: advantage-order-service-utility
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  build-and-test-dev-advantage-order-service-utility:
+  build-and-test-dev-$SERVICE:
     runs-on: ubuntu-latest
     environment: dev
     steps:
@@ -27,7 +30,7 @@ jobs:
       - name: Install Serverless Framework
         run: |
           npm install -g serverless@3.34.0
-        working-directory: services/advantage-order-service-utility/v8
+        working-directory: services/$SERVICE/v8
 
       - name: Install NPM in root
         run: |
@@ -36,36 +39,16 @@ jobs:
       - name: Install NPM
         run: |
           npm ci
-        working-directory: services/advantage-order-service-utility/v8
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-region: ${{ secrets.AWS_REGION }}
-          role-to-assume: ${{ secrets.OIDC_ROLE_DEV }}
-          role-session-name: OIDC-session
-
-      - name: Serverless package
-        run: |
-          ls -lrth
-          serverless package
-          ls -lrth
-          ls -lrth node_modules
-        working-directory: services/advantage-order-service-utility/v8
-
-      - name: Serverless Create Domain
-        run: |
-          serverless create_domain --stage dev --verbose
-        working-directory: services/advantage-order-service-utility/v8
+        working-directory: services/$SERVICE/v8
 
       - name: Run test
         run: |
           pwd
           node --experimental-vm-modules node_modules/jest/bin/jest.js
-        working-directory: services/advantage-order-service-utility/v8
+        working-directory: services/$SERVICE/v8
 
-  deploy-dev-advantage-order-advantage-order-service-utility:
-    needs: build-and-test-dev-advantage-order-service-utility
+  deploy-dev-advantage-order-$SERVICE:
+    needs: build-and-test-dev-$SERVICE
     runs-on: ubuntu-latest
     environment: dev
     steps:
@@ -77,16 +60,6 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Setup TypeScript
-        run: npm install -g typescript@5.1
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-region: ${{ secrets.AWS_REGION }}
-          role-to-assume: ${{ secrets.OIDC_ROLE_DEV }}
-          role-session-name: OIDC-session
-
       - name: Install pipenv
         run: pip install pipenv==2023.6.18
 
@@ -94,8 +67,5 @@ jobs:
         run: npm install -g serverless@3.34.0
 
       - name: Install NPM dependencies
-        run: npm --prefix ./services/advantage-order-service-utility/v8 install ./services/advantage-order-service-utility/v8
+        run: npm --prefix ./services/$SERVICE/v8 install ./services/$SERVICE/v8
 
-      - name: Deploy serverless
-        run: serverless deploy --stage dev --verbose
-        working-directory: services/advantage-order-service-utility/v8
