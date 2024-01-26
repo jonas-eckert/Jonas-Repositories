@@ -1,0 +1,101 @@
+name: CICD STG SOA mason-order-service-entity
+
+on:
+  push:
+    branches:
+      - stage
+    paths:
+      - 'services/mason-order-service-entity/v7/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-test-stg-mason-order-service-entity:
+    runs-on: ubuntu-latest
+    environment: stg
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Node.js 18
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install Serverless Framework
+        run: |
+          npm install -g serverless@3.34.0
+        working-directory: services/mason-order-service-entity/v7
+
+      - name: Install NPM in root
+        run: |
+          npm install
+
+      - name: Install NPM
+        run: |
+          npm ci
+        working-directory: services/mason-order-service-entity/v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.OIDC_ROLE_STG }}
+          role-session-name: OIDC-session
+
+      - name: Serverless package
+        run: |
+          ls -lrth
+          serverless package --stage stg --verbose
+          ls -lrth
+          ls -lrth node_modules
+        working-directory: services/mason-order-service-entity/v7
+
+      - name: Serverless Create Domain
+        run: |
+          serverless create_domain --stage stg --verbose
+        working-directory: services/mason-order-service-entity/v7
+
+      - name: Run test
+        run: |
+          pwd
+          node --experimental-vm-modules node_modules/jest/bin/jest.js
+        working-directory: services/mason-order-service-entity/v7
+
+  deploy-stg-mason-order-service-entity:
+    needs: build-and-test-stg-mason-order-service-entity
+    runs-on: ubuntu-latest
+    environment: stg
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Setup TypeScript
+        run: npm install -g typescript@5.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.OIDC_ROLE_STG }}
+          role-session-name: OIDC-session
+
+      - name: Install pipenv
+        run: pip install pipenv==2023.6.18
+
+      - name: Install Serverless Framework
+        run: npm install -g serverless@3.34.0
+
+      - name: Install NPM dependencies
+        run: npm --prefix ./services/mason-order-service-entity/v7 install ./services/mason-order-service-entity/v7
+
+      - name: Deploy serverless
+        run: serverless deploy --stage stg --verbose
+        working-directory: services/mason-order-service-entity/v7

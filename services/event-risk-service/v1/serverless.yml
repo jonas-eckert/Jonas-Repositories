@@ -1,67 +1,91 @@
-org: masoncompanies
-app: jonas-test
-service: event-risk-service-test
+# org: masoncompanies
+# app: aws-soa
+service: event-risk-service-v1
 frameworkVersion: '3'
 
-package:
-  individually: true
-  excludeDevDependencies: true
-  include:
-    - ../../shared/**
+plugins:
+  - serverless-scriptable-plugin
+  - serverless-plugin-typescript
+  - serverless-offline
+  - serverless-domain-manager
 
 provider:
   name: aws
   runtime: nodejs18.x
-  stage: dev
+  stage: ${opt:stage, 'dev'}
   role: arn:aws:iam::${aws:accountId}:role/soa-lambda-execution-role
   region: us-east-2
-  httpApi:
-    payload: "2.0"
-    disableDefaultEndpoint: false
-  memorySize: 1024 # default, but can be overwritten in the function
-  timeout: 10
-  stackTags:
-    service-name: event-risk-service-test
+  endpointType: PRIVATE
+  vpcEndpointIds:
+    - ${ssm:/${self:provider.stage}/soa/vpc-endpoint}
+
+  vpc:
+    securityGroupIds:
+      - ${ssm:/${self:provider.stage}/soa/event-risk-check/security-group}
+    subnetIds:
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-1}
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-2}
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-3}
+  apiGateway:
+    resourcePolicy:
+      - Effect: Allow
+        Principal: '*'
+        Action: execute-api:Invoke
+        Resource:
+          - execute-api:/*/*/*
+        Condition:
+          StringEquals:
+            aws:sourceVpc:
+              - ${ssm:/${self:provider.stage}/soa/vpc-id}
+
+  deploymentBucket:
+    name: mason-soa-${self:provider.stage}-deploy
+  apiName: event-risk-service-v1
+
+custom:
+  scriptHooks:
+    before:package:createDeploymentArtifacts: cp -R ../../../shared ./shared
+
+  customDomain:
+    domainName: ${ssm:/${self:provider.stage}/soa/customdomain/api-domain}
+    basePath: 'MasonGateway/OracleCommerce/EventRiskService/v1'
     stage: ${self:provider.stage}
-    team: mason development team
-    created-date: '2023-10-23'
-    reusable-resource: 'false'
-  tracing:
-    apiGateway: true
-    lambda: true
+    createRoute53Record: false
+    certificateArn: ${ssm:/${self:provider.stage}/soa/customdomain/certificateArn}
+    endpointType: 'regional'
 
 functions:
   handler:
     handler: handler.eventRiskRouter
-    name: event-risk-service-test
+    name: event-risk-service-v1
     memorySize: 512
     timeout: 30
-    tags: 
-      service-name: event-risk-service-test
+    tags:
+      service-name: event-risk-service-v1
       stage: ${self:provider.stage}
       team: mason development team
       created-date: '2023-10-23'
       reusable-resource: 'false'
     events:
-    #task
+      #task
       - http:
-          path: /MasonGateway/task/EventRisk/v1/calculate-risk
+          path: /calculate-risk
           method: post
           integration: lambda
           response:
             headers:
               content-type: "'application/json'"
-    #entity
+      #entity
       - http:
-          path: /MasonGateway/entity/EventRisk/v1/calculate-risk
+          path: /entity/calculate-risk
           method: post
           integration: lambda
           response:
             headers:
               content-type: "'application/json'"
-    #utility
+      #utility
       - http:
-          path: /MasonGateway/utility/EventRisk/v1/calculate-risk
+          path: /utility/calculate-risk
           method: post
           integration: lambda
           response:
@@ -77,9 +101,6 @@ functions:
     environment:
       REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
-      ACCERTIFY_BASE_URL:
-        ${ssm:/${self:provider.stage}/soa/accertify/base-url}
-
-plugins:
-  - serverless-plugin-typescript
-  - serverless-offline
+      ACCERTIFY_BASE_URL: ${ssm:/${self:provider.stage}/soa/accertify/base-url}
+      PINO_LOG_LEVEL: 'debug'
+# static comment to trigger pipeline during POC phase 14

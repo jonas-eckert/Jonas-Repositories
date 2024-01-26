@@ -1,0 +1,90 @@
+# org: masoncompanies
+# app: aws-soa
+service: mason-order-service-entity-v7
+frameworkVersion: '3'
+
+plugins:
+  - serverless-scriptable-plugin
+  - serverless-offline 
+  - serverless-domain-manager
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  role: arn:aws:iam::${aws:accountId}:role/soa-lambda-execution-role
+  region: us-east-2
+  endpointType: PRIVATE
+  vpcEndpointIds:
+    - ${ssm:/${self:provider.stage}/soa/vpc-endpoint}
+
+  vpc:
+    securityGroupIds:
+      - ${ssm:/${self:provider.stage}/soa/event-risk-check/security-group}
+    subnetIds:
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-1}
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-2}
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-3}
+
+  apiGateway:
+    resourcePolicy:
+      - Effect: Allow
+        Principal: '*'
+        Action: execute-api:Invoke
+        Resource:
+          - execute-api:/*/*/*
+        Condition:
+          StringEquals:
+            aws:sourceVpc:
+              - ${ssm:/${self:provider.stage}/soa/vpc-id}
+
+  deploymentBucket:
+    name: mason-soa-${self:provider.stage}-deploy
+  apiName: mason-order-service-entity-v7
+
+custom:
+  scriptHooks:
+   before:package:createDeploymentArtifacts: cp -R ../../../shared ./shared
+
+  customDomain:
+    domainName: ${ssm:/${self:provider.stage}/soa/customdomain/api-domain}
+    basePath: 'MasonGateway/OrderService/v7'
+    stage: ${self:provider.stage}
+    createRoute53Record: false
+    certificateArn: ${ssm:/${self:provider.stage}/soa/customdomain/certificateArn}
+    endpointType: 'regional' 
+
+functions:
+  api:
+    handler: index.OrderServiceRouter
+    name: mason-order-service-entity-v7
+    memorySize: 512
+    timeout: 10
+    tags: 
+      service-name: mason-order-service-entity-v7
+      stage: ${self:provider.stage}
+      team: mason development team
+      created-date: '2023-11-20'
+      reusable-resource: 'false'
+    events:
+      - http:
+          path: /fn/get-order-logs
+          method: get
+          integration: lambda
+          response:
+            headers:
+              content-type: "'application/json'"
+    vpc:
+      securityGroupIds:
+        - ${ssm:/${self:provider.stage}/soa/event-risk-check/security-group}
+      subnetIds:
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-1}
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-2}
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-3}
+    environment:
+      REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      ADVANTAGE_ORDER_SERVICE_UTILITY_V8_BASE_URL: "/MasonGateway/Advantage/OrderService/v8"
+      MASON_DOMAIN: ${ssm:/${self:provider.stage}/soa/customdomain/api-domain}
+      PINO_LOG_LEVEL: "debug"
+# static comment to trigger pipeline during POC phase 16

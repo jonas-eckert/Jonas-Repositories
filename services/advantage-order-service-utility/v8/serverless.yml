@@ -1,0 +1,91 @@
+# org: masoncompanies
+# app: aws-soa
+service: advantage-order-service-utility-v8
+frameworkVersion: '3'
+
+plugins:
+  - serverless-scriptable-plugin
+  - serverless-offline
+  - serverless-domain-manager
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  role: arn:aws:iam::${aws:accountId}:role/soa-lambda-execution-role
+  region: us-east-2
+  endpointType: PRIVATE
+  vpcEndpointIds:
+    - ${ssm:/${self:provider.stage}/soa/vpc-endpoint}
+
+  vpc:
+    securityGroupIds:
+      - ${ssm:/${self:provider.stage}/soa/event-risk-check/security-group}
+    subnetIds:
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-1}
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-2}
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-3}
+  apiGateway:
+    resourcePolicy:
+      - Effect: Allow
+        Principal: '*'
+        Action: execute-api:Invoke
+        Resource:
+          - execute-api:/*/*/*
+        Condition:
+          StringEquals:
+            aws:sourceVpc:
+              - ${ssm:/${self:provider.stage}/soa/vpc-id}
+
+  deploymentBucket:
+    name: mason-soa-${self:provider.stage}-deploy
+  apiName: advantage-order-service-utility-v8
+
+custom:
+  scriptHooks:
+    before:package:createDeploymentArtifacts: cp -R ../../../shared ./shared
+
+  customDomain:
+    domainName: ${ssm:/${self:provider.stage}/soa/customdomain/api-domain}
+    basePath: 'MasonGateway/Advantage/OrderService/v8'
+    stage: ${self:provider.stage}
+    createRoute53Record: false
+    certificateArn: ${ssm:/${self:provider.stage}/soa/customdomain/certificateArn}
+    endpointType: 'regional'
+
+functions:
+  handler:
+    handler: index.orderServiceRouter
+    name: advantage-order-service-utility-v8
+    memorySize: 512
+    timeout: 30
+    tags:
+      service-name: advantage-order-service-utility-v8
+      stage: ${self:provider.stage}
+      team: mason development team
+      created-date: '2023-11-15'
+      reusable-resourced: 'false'
+    events:
+      - http:
+          path: /fn/get-order-logs
+          method: get
+          integration: lambda
+          response:
+            headers:
+              content-type: "'application/json'"
+    vpc:
+      securityGroupIds:
+        - ${ssm:/${self:provider.stage}/soa/event-risk-check/security-group}
+      subnetIds:
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-1}
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-2}
+        - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-3}
+    environment:
+      REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      ADVANTAGE_SOCKET_HOST: ${ssm:/${self:provider.stage}/soa/Advantage/host}
+      ADVANTAGE_SOCKET_PORT: 8221
+      PINO_LOG_LEVEL: 'debug'
+      SOCKET_TIMEOUT: 1000
+#update to trigger deploy 12
+

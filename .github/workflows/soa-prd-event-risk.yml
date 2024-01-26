@@ -1,0 +1,101 @@
+name: CICD PRD SOA event-risk
+
+on:
+  push:
+    branches:
+      - prod
+    paths:
+      - 'services/event-risk-service/v1/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-test-prd-soa-event-risk:
+    runs-on: ubuntu-latest
+    environment: prd
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Node.js 18
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install Serverless Framework
+        run: |
+          npm install -g serverless@3.34.0
+        working-directory: services/event-risk-service/v1
+
+      - name: Install NPM in root
+        run: |
+          npm install
+
+      - name: Install NPM
+        run: |
+          npm ci
+        working-directory: services/event-risk-service/v1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.OIDC_ROLE_PRD }}
+          role-session-name: OIDC-session
+
+      - name: Serverless package
+        run: |
+          ls -lrth
+          serverless package --stage prd --verbose
+          ls -lrth
+          ls -lrth node_modules
+        working-directory: services/event-risk-service/v1
+
+      - name: Serverless Create Domain
+        run: |
+          serverless create_domain --stage prd --verbose
+        working-directory: services/event-risk-service/v1
+
+      - name: Run test
+        run: |
+          pwd
+          node --experimental-vm-modules node_modules/jest/bin/jest.js
+        working-directory: services/event-risk-service/v1
+
+  deploy-prd-soa-event-risk:
+    needs: build-and-test-prd-soa-event-risk
+    runs-on: ubuntu-latest
+    environment: prd
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Setup TypeScript
+        run: npm install -g typescript@5.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.OIDC_ROLE_PRD }}
+          role-session-name: OIDC-session
+
+      - name: Install pipenv
+        run: pip install pipenv==2023.6.18
+
+      - name: Install Serverless Framework
+        run: npm install -g serverless@3.34.0
+
+      - name: Install NPM dependencies
+        run: npm --prefix ./services/event-risk-service/v1 install ./services/event-risk-service/v1
+
+      - name: Deploy serverless
+        run: serverless deploy --stage prd --verbose
+        working-directory: services/event-risk-service/v1

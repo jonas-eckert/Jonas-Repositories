@@ -1,0 +1,132 @@
+# org: masoncompanies
+# app: aws-soa
+service: fiserv-transaction-service-utility-v1
+frameworkVersion: '3'
+
+plugins:
+  - serverless-scriptable-plugin
+  - serverless-offline
+  - serverless-domain-manager
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  role: arn:aws:iam::${aws:accountId}:role/soa-lambda-execution-role
+  region: us-east-2
+  endpointType: PRIVATE
+  vpcEndpointIds:
+    - ${ssm:/${self:provider.stage}/soa/vpc-endpoint}
+
+  vpc:
+    securityGroupIds:
+      - ${ssm:/${self:provider.stage}/soa/event-risk-check/security-group}
+    subnetIds:
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-1}
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-2}
+      - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-3}
+  apiGateway:
+    resourcePolicy:
+      - Effect: Allow
+        Principal: '*'
+        Action: execute-api:Invoke
+        Resource:
+          - execute-api:/*/*/*
+        Condition:
+          StringEquals:
+            aws:sourceVpc:
+              - ${ssm:/${self:provider.stage}/soa/vpc-id}
+
+  deploymentBucket:
+    name: mason-soa-${self:provider.stage}-deploy
+  apiName: fiserv-transaction-service-utility-v1
+
+custom:
+  scriptHooks:
+   before:package:createDeploymentArtifacts: cp -R ../../../shared ./shared
+
+  customDomain:
+    domainName: ${ssm:/${self:provider.stage}/soa/customdomain/api-domain}
+    basePath: 'MasonGateway/Fiserv/PaymentTransactionService/v1'
+    stage: ${self:provider.stage}
+    createRoute53Record: false
+    certificateArn: ${ssm:/${self:provider.stage}/soa/customdomain/certificateArn}
+    endpointType: 'regional'
+
+
+functions:
+  handler:
+    handler: index.transactionServiceRouter
+    name: fiserv-transaction-service-utility-v1
+    memorySize: 512
+    timeout: 30
+    tags:
+      service-name: fiserv-transaction-service-utility-v1
+      stage: ${self:provider.stage}
+      team: mason development team
+      created-date: "2023-12-22"
+      reusable-resource: "false"
+    events:
+      - http:
+          path: /tokenize-card
+          method: post 
+          integration: lambda
+          response:
+            headers:
+              content-type: "'application/json'"
+            # https://www.serverless.com/framework/docs/providers/aws/events/apigateway
+            # https://dev.classmethod.jp/articles/mapping-lambda-error-to-apigateway-with-sls/
+            template: $input.json('$')
+            statusCodes:
+              200:
+                pattern: "" # Default response method
+              400:
+                # pattern: '.*"statusCode":400,.*' # JSON response
+                pattern: '.*"code":"Bad Request".*' # JSON response
+                template: $util.parseJson($input.json('$.errorMessage')) # JSON return object
+                headers:
+                  Content-Type: "'application/json'"
+              500:
+                pattern: '.*"code":"Downstream Error".*' # JSON response
+                template: $util.parseJson($input.json('$.errorMessage')) # JSON return object
+                headers:
+                  Content-Type: "'application/json'"
+
+      - http:
+          path: /submit-payment
+          method: post 
+          integration: lambda
+          response:
+            headers:
+              content-type: "'application/json'"
+            # https://www.serverless.com/framework/docs/providers/aws/events/apigateway
+            # https://dev.classmethod.jp/articles/mapping-lambda-error-to-apigateway-with-sls/
+            template: $input.json('$')
+            statusCodes:
+              200:
+                pattern: "" # Default response method
+              400:
+                # pattern: '.*"statusCode":400,.*' # JSON response
+                pattern: '.*"code":"Bad Request".*' # JSON response
+                template: $util.parseJson($input.json('$.errorMessage')) # JSON return object
+                headers:
+                  Content-Type: "'application/json'"
+              500:
+                pattern: '.*"code":"Downstream Error".*' # JSON response
+                template: $util.parseJson($input.json('$.errorMessage')) # JSON return object
+                headers:
+                  Content-Type: "'application/json'"
+    vpc:
+        securityGroupIds:
+          - ${ssm:/${self:provider.stage}/soa/event-risk-check/security-group}
+        subnetIds:
+          - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-1}
+          - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-2}
+          - ${ssm:/${self:provider.stage}/soa/lambdas/public-subnet-3}
+    environment:
+      REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      PINO_LOG_LEVEL: "debug"
+      FISERV_URL: ${ssm:/${self:provider.stage}/soa/fiserv/fiserv_url}
+# static comment to trigger pipeline 9
+

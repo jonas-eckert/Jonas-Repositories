@@ -1,48 +1,36 @@
 import pino from 'pino';
-import { calculateRiskTask } from "./operations/task/calculate-risk";
-import { calculateRiskEntity } from "./operations/entity/calculate-risk";
+import { calculateRiskEntity } from './operations/entity/calculate-risk';
+import { calculateRiskTask } from './operations/task/calculate-risk';
 import { calculateRiskUtility } from './operations/utility/calculate-risk';
+import { badRequestFault } from './shared/utils/ErrorHandler_ts';
 
-const logger = pino();
+const logger = pino({
+  level: process.env.PINO_LOG_LEVEL || 'info',
+});
 
-module.exports.eventRiskRouter = async (event) => {
+module.exports.eventRiskRouter = async (event: any) => {
+  logger.debug({ event }, 'Request from client');
   try {
-    let apiPath = event.requestPath;
+    const apiPath = event.requestPath;
 
-    //TASK SERVICES///////////////////////////////////////////////////////////////////
-    if(apiPath === "/MasonGateway/task/EventRisk/v1/calculate-risk"){
-
-      return await calculateRiskTask(event.body)
+    //TASK SERVICES
+    if (apiPath === '/calculate-risk') {
+      return await calculateRiskTask(event.body);
     }
 
-    //ENTITY SERVICES//////////////////////////////////////////////////////////////////
-    if(apiPath === "/MasonGateway/entity/EventRisk/v1/calculate-risk"){
-
-      return calculateRiskEntity(event.body);
+    //ENTITY SERVICES
+    if (apiPath === '/entity/calculate-risk') {
+      return await calculateRiskEntity(event.body);
     }
 
-    //UTILITY SERVICES//////////////////////////////////////////////////////////////////
-    if(apiPath === "/MasonGateway/utility/EventRisk/v1/calculate-risk"){
+    //UTILITY SERVICES
+    if (apiPath === '/utility/calculate-risk') {
+      return await calculateRiskUtility(event.body);
+    }
 
-      return calculateRiskUtility(event.body)
-    }
-    return {
-      statusCode: 200,
-      body: JSON.stringify(
-        {
-          message: "Could not find path to call operation from handler.ts",
-          input: event,
-        },
-        null,
-        2
-      ),
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      message: "Error in handler.ts",
-      errorName: error.name,
-      errorMessage: error.message
-    }
+    //if the apiPath doesn't exist or is incorrect throw an error for the catch block
+    throw new Error();
+  } catch (error: any) {
+    return badRequestFault(error, event);
   }
-}
+};

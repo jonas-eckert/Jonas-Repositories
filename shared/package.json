@@ -1,0 +1,15 @@
+{
+    "name": "shared",
+    "version": "1.0.0",
+    "description": "Common library methods to be used across all the services",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "eslint": "^8.50.0"
+    }
+}

@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "commonjs",
+    "strict": false,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "outDir": "./.build",
+    "declaration": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "removeComments": true,
+    "noImplicitAny": false,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": "./",
+    "baseUrl": "./"
+  },
+  "include": ["shared/**/*", "services/**/*"],
+  "exclude": ["node_modules", ".build"]
+}

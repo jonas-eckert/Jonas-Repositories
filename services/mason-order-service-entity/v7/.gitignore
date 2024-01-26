@@ -1,0 +1,9 @@
+# package directories
+node_modules
+shared
+.esbuild
+.build
+.vscode
+
+# Serverless directories
+.serverless

@@ -1,72 +1,43 @@
-<!--
-title: 'AWS TypeScript Example'
-description: 'This template demonstrates how to deploy a TypeScript function running on AWS Lambda using Serverless Framework.'
-layout: Doc
-framework: v3
-platform: AWS
-language: nodeJS
-priority: 1
-authorLink: 'https://github.com/serverless'
-authorName: 'Serverless, inc.'
-authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
--->
+# Event Risk Service v1
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Pre-requisites](#pre-requisites)
+- [Getting Started](#getting-started)
 
 
-# Serverless Framework AWS TypeScript Example
+## Overview
 
-This template demonstrates how to deploy a TypeScript function running on AWS Lambda using Serverless Framework. The deployed function does not include any event definitions as well as any kind of persistence (database). For more advanced configurations check out the [examples repo](https://github.com/serverless/examples/) which includes integrations with SQS, DynamoDB or examples of functions that are triggered in `cron`-like manner. For details about configuration of specific `events`, please refer to our [documentation](https://www.serverless.com/framework/docs/providers/aws/events/).
+The Event Risk Service receives requests from Oracle ATG, transforms them into Mason format, conducts validation, and then transforms the request into Accertify format before forwarding it to Accertify. Accertify's response is then transformed back to Mason format, and finally converted back to Oracle ATG's expected format. 
 
-## Usage
+The Event Risk Service is deployed on AWS-Lambda using the serverless framework. The serverless.yml file contains all the integrations required to successfully deploy the service on AWS-Lambda.
 
-### Deployment
+## Pre-requisites
 
-In order to deploy the example, you need to run the following command:
+- NodeJS
+- NPM
+- AWS CLI configured with appropriate permissions
+- Serverless Framework
+- Basic understanding of TypeScript, Serverless and AWS Service
 
-```
-$ serverless deploy
-```
+## Getting Started
 
-After running deploy, you should see output similar to:
+1. **Clone the repository** 
+    You will need to clone the AWS-SOA respository, you can use the GitHub desktop app or run this command in your directory.
 
-```bash
-Deploying aws-node-typescript to stage dev (us-east-1)
+    `https://github.com/Mason-Companies-Inc/aws-soa.git`
 
-✔ Service deployed to stack aws-node-typescript-dev (112s)
+2. **Setup root dependencies**
+    You will need to setup dependecies in the root AWS-SOA directory. Once in the aws-soa directory, run:
 
-functions:
-  hello: aws-node-typescript-dev-hello (806 B)
-```
+    `npm install`
 
-### Invocation
+    This will install the dependicies that are required to run, deploy and test files from the root.
 
-After successful deployment, you can invoke the deployed function by using the following command:
+3. **Setup service dependencies**
+    You will need to setup the dependencies that are required for that service, run:
 
-```bash
-serverless invoke --function hello
-```
+    `npm install`
 
-Which should result in response similar to the following:
-
-```json
-{
-    "message": "Go Serverless v3! Your function executed successfully!",
-    "input": {}
-}
-```
-
-### Local development
-
-You can invoke your function locally by using the following command:
-
-```bash
-serverless invoke local --function hello
-```
-
-Which should result in response similar to the following:
-
-```
-{
-    "message": "Go Serverless v3! Your function executed successfully!",
-    "input": {}
-}
-```
+    This will install the dependices that are required to run, deploy and test files from this service.
